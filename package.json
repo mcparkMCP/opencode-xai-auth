@@ -1,0 +1,13 @@
+{
+  "name": "opencode-xai-auth",
+  "version": "0.0.1",
+  "description": "xAI Grok SSO authentication plugin for OpenCode — use your Grok/SuperGrok subscription instead of API credits",
+  "main": "./index.mjs",
+  "type": "module",
+  "exports": "./index.mjs",
+  "license": "MIT",
+  "keywords": ["opencode", "xai", "grok", "auth", "sso", "plugin"],
+  "devDependencies": {
+    "@opencode-ai/plugin": "^0.4.45"
+  }
+}
