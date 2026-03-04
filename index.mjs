@@ -328,10 +328,14 @@ async function createJsonResponse(grokResponse, model) {
 // ---------------------------------------------------------------------------
 
 /**
- * Accept the SSO cookie in multiple formats:
- *  - Full cookie header string: "sso=abc123; sso-rw=xyz; x-anonuserid=..."
- *  - Single key=value:          "sso=abc123"
- *  - Bare SSO value:            "abc123..."
+ * Accept cookies in multiple formats:
+ *  - Full cookie header string (RECOMMENDED): "sso=abc; sso-rw=xyz; cf_clearance=..."
+ *  - Single key=value:                        "sso=abc123"
+ *  - Bare SSO value:                          "abc123..."
+ *
+ * IMPORTANT: grok.com is behind Cloudflare. The full cookie header
+ * (including cf_clearance) is needed to avoid the Cloudflare JS challenge.
+ * Paste the ENTIRE Cookie header from DevTools, not just the sso value.
  */
 function formatCookie(raw) {
   if (!raw) return ""
@@ -445,9 +449,10 @@ export async function XaiAuthPlugin({ client }) {
               grokResponse.status === 403
             ) {
               throw new Error(
-                "opencode-xai-auth: SSO cookie expired or invalid. " +
-                  "Run `opencode auth login` and paste a fresh cookie " +
-                  "from grok.com DevTools → Application → Cookies → sso"
+                "opencode-xai-auth: Cookie expired or Cloudflare challenge triggered. " +
+                  "Run `opencode auth login` and paste the FULL Cookie header " +
+                  "(including cf_clearance) from grok.com DevTools → Network → " +
+                  "any request → Headers → Cookie"
               )
             }
 
@@ -470,16 +475,18 @@ export async function XaiAuthPlugin({ client }) {
       methods: [
         {
           type: "oauth",
-          label: "Grok SSO Cookie (grok.com subscription)",
+          label: "Grok Cookie (grok.com subscription)",
           async authorize() {
             return { url: "https://grok.com", verifier: "" }
           },
           async callback(code, _verifier) {
+            // cf_clearance typically expires in 30min-2hrs, sso lasts longer.
+            // Use the shorter expiry as a conservative estimate.
             return {
               type: "success",
               access: code.trim(),
               refresh: "",
-              expires: Date.now() + 7 * 24 * 60 * 60 * 1000, // 7 days
+              expires: Date.now() + 2 * 60 * 60 * 1000, // 2 hours (cf_clearance lifetime)
             }
           },
         },

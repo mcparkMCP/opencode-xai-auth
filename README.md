@@ -35,25 +35,26 @@ Or for local development:
 5. Get your SSO cookie (see below)
 6. Paste it when prompted
 
-#### How to get your SSO cookie
+#### How to get your cookies
 
-**Option A — From DevTools Cookies panel:**
+> **IMPORTANT:** grok.com is behind Cloudflare. You need the **full Cookie header** (including `cf_clearance`), not just the `sso` value. The `cf_clearance` cookie proves a real browser solved the Cloudflare challenge.
+
+**Recommended — Copy full cookie string from Network tab:**
 
 1. Open [grok.com](https://grok.com) in your browser (make sure you're logged in)
-2. Open DevTools (`F12` or `Cmd+Option+I`)
-3. Go to **Application** → **Cookies** → `https://grok.com`
-4. Find the `sso` cookie
-5. Copy its **Value**
-6. Paste into OpenCode
+2. Open DevTools (`F12` or `Cmd+Option+I`) → **Network** tab
+3. Send any message in the Grok chat
+4. Find the request to `grok.com/rest/app-chat/conversations/new`
+5. Click it → **Headers** tab → scroll to **Request Headers** → find `cookie:`
+6. Copy the **entire cookie value** (it will contain `cf_clearance=...; sso=...; sso-rw=...` etc.)
+7. Paste into OpenCode
 
-**Option B — From a network request (includes all cookies):**
+**Alternative — Copy as cURL:**
 
-1. Open [grok.com](https://grok.com) and open DevTools → **Network** tab
-2. Send any message in the Grok chat
-3. Find the request to `grok.com/rest/app-chat/conversations/new`
-4. Right-click → **Copy** → **Copy as cURL**
-5. Find the `-H 'cookie: ...'` part and copy the full cookie value
-6. Paste into OpenCode
+1. Same as above, but right-click the request → **Copy** → **Copy as cURL**
+2. Find the `-H 'cookie: ...'` part and copy the full cookie value
+
+> **Note:** The `cf_clearance` cookie expires every 30 minutes to 2 hours. You'll need to re-paste periodically. The `sso` cookie lasts longer (days).
 
 ### Method 2: xAI API Key (standard, uses API credits)
 
@@ -78,20 +79,21 @@ This is the big one. Grok's internal web API (`grok.com/rest/app-chat/conversati
 
 - **No conversation persistence**: Each request creates a new conversation on Grok's side. OpenCode manages context by sending the full message history each time.
 - **No token counting**: Usage stats are reported as zero since Grok's internal API doesn't expose token counts.
-- **Cookie expiration**: SSO cookies expire (typically after a few days to a week). When they expire, you'll see a clear error telling you to re-authenticate.
-- **Fragile**: This relies on Grok's undocumented internal API. It can break at any time if xAI changes their web app.
+- **Cloudflare protection**: grok.com uses Cloudflare's JS challenge. You must include the `cf_clearance` cookie (obtained by your browser solving the challenge). This cookie expires every **30 minutes to 2 hours**, so you'll need to re-paste cookies frequently.
+- **Cookie expiration**: `cf_clearance` expires quickly (~2 hours). `sso` cookies last longer (~days). When either expires, you'll see a clear error.
+- **Fragile**: This relies on Grok's undocumented internal API and Cloudflare cookie replay. It can break if xAI changes their API or Cloudflare tightens their challenge.
 - **Possible ToS issues**: Using browser cookies to access Grok programmatically may violate xAI's Terms of Service. Use at your own risk.
 
 ## Cookie expiration
 
-When your SSO cookie expires, you'll see:
+When your cookies expire (most likely `cf_clearance`), you'll see:
 
 ```
-opencode-xai-auth: SSO cookie expired or invalid.
-Run `opencode auth login` and paste a fresh cookie from grok.com DevTools
+opencode-xai-auth: Cookie expired or Cloudflare challenge triggered.
+Run `opencode auth login` and paste the FULL Cookie header...
 ```
 
-Just run `opencode auth login` again and paste a fresh cookie.
+Just run `opencode auth login` again, go back to grok.com, grab fresh cookies from DevTools Network tab, and paste.
 
 ## How the translation works
 
